@@ -1,15 +1,20 @@
 package com.retail.rewards.util;
 
 public class RewardsCalculator {
+    private static final double FIRST_THRESHOLD = 50.0;
+    private static final double SECOND_THRESHOLD = 100.0;
+    private static final double SECOND_THRESHOLD_BONUS = SECOND_THRESHOLD - FIRST_THRESHOLD;
+
     public static double calculatePoints(double amount) {
-        double points = 0.0;
-        if (amount > 100) {
-            points += (amount - 100) * 2; // 2 points per $1 over 100
-            points += 50; // guaranteed 50 points for $50-$100 range
-        } else if (amount > 50) {
-            points += (amount - 50); // 1 point per $1 between 50 and 100
+        if (amount > SECOND_THRESHOLD) {
+            return (amount - SECOND_THRESHOLD) * 2 + SECOND_THRESHOLD_BONUS;
         }
-        return points;
+
+        if (amount > FIRST_THRESHOLD) {
+            return amount - FIRST_THRESHOLD;
+        }
+
+        return 0.0;
     }
 }
 

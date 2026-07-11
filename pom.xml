@@ -4,7 +4,7 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.example</groupId>
+	<groupId>com.retail.rewards</groupId>
 	<artifactId>infosys-retail-rewards-application</artifactId>
 	<version>1.0.0</version>
 	<packaging>jar</packaging>
@@ -72,6 +72,19 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring.boot.version}</version>
+			</plugin>
+
+			<!-- Ensure Surefire runs JUnit 5 tests reliably -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M7</version>
+				<configuration>
+					<forkCount>1</forkCount>
+					<reuseForks>true</reuseForks>
+					<useSystemClassLoader>true</useSystemClassLoader>
+				</configuration>
 			</plugin>
 
 			<!-- Compiler plugin for Java 8 -->
