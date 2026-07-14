@@ -95,7 +95,20 @@ The service supports two main endpoints:
 * If a customer exists but has no transactions in the requested range, the customer response returns zero reward points and an empty transactions list.
 
 ## Error Responses
-* `400 Bad Request` - returned when required query parameters are missing, only one of `startDate`/`endDate` is provided, or date format is invalid.
+The application uses a structured JSON format for all error responses to provide clear debugging context.
+
+### Common Error Payload Schema
+```json
+{
+  "timestamp": "2026-07-14T14:39:24.135",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Detailed error message here"
+}
+```
+
+### Supported HTTP Error Statuses
+* `400 Bad Request` - returned when required query parameters are missing or date format is invalid.
 * `404 Not Found` - returned when the requested customer does not exist.
 * `200 OK` - returned for valid requests, including responses with zero points.
 

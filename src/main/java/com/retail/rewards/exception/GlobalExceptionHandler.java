@@ -6,19 +6,47 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.time.DateTimeException;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    public static class ErrorResponse {
+    private final LocalDateTime timestamp;
+    private final int status;
+    private final String error;
+    private final String message;
+
+    public ErrorResponse(LocalDateTime timestamp, int status, String error, String message) {
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
+        this.message = message;
+    }
+
+    // Getters are required for Jackson to serialize them to JSON
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public int getStatus() { return status; }
+    public String getError() { return error; }
+    public String getMessage() { return message; }
+}
+
+
     @ExceptionHandler(CustomerNotFoundException.class)
-    public ResponseEntity<String> handleCustomerNotFound(CustomerNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleCustomerNotFound(CustomerNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler({
@@ -28,22 +56,36 @@ public class GlobalExceptionHandler {
             DateTimeException.class,
             MethodArgumentNotValidException.class
     })
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<String> handleBadRequest(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
+        String message = ex.getMessage();
+
+        // 1. Handle Constraint Violations (e.g., on @RequestParam/@PathVariable)
         if (ex instanceof ConstraintViolationException) {
-            String message = ((ConstraintViolationException) ex).getConstraintViolations().stream()
+            message = ((ConstraintViolationException) ex).getConstraintViolations().stream()
                     .map(this::formatConstraintViolation)
                     .collect(Collectors.joining(", "));
-            return ResponseEntity.badRequest().body(message);
-        }
-
-        if (ex instanceof MethodArgumentTypeMismatchException) {
+        } 
+        // 2. Handle Spring Validation Bind Errors (e.g., @Valid on @RequestBody)
+        else if (ex instanceof MethodArgumentNotValidException) {
+            message = ((MethodArgumentNotValidException) ex).getBindingResult().getFieldErrors().stream()
+                    .map(fieldError -> fieldError.getField() + " " + fieldError.getDefaultMessage())
+                    .collect(Collectors.joining(", "));
+        } 
+        // 3. Handle Parameter Type Mismatches
+        else if (ex instanceof MethodArgumentTypeMismatchException) {
             MethodArgumentTypeMismatchException mismatch = (MethodArgumentTypeMismatchException) ex;
             String fieldName = mismatch.getName() != null ? mismatch.getName() : "parameter";
-            return ResponseEntity.badRequest().body(fieldName + " must be a valid value");
+            message = fieldName + " must be a valid value";
         }
 
-        return ResponseEntity.badRequest().body(ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     private String formatConstraintViolation(ConstraintViolation<?> violation) {

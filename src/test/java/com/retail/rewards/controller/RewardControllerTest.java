@@ -66,41 +66,53 @@ public class RewardControllerTest {
                         .param("startDate", "2026-04-01")
                         .param("endDate", "2026-04-30"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Customer not found with id: 999"));
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Customer not found with id: 999"));
     }
 
     @Test
     void testInvalidDateParameter() throws Exception {
         mockMvc.perform(get("/api/rewards/customers/1")
-                        .param("startDate", "2026-04-31")
+                        .param("startDate", "2026-04-31") // Invalid date
                         .param("endDate", "2026-04-30"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
     void testInvalidNumberOfMonthsOnCustomer() throws Exception {
         mockMvc.perform(get("/api/rewards/customers/1")
                         .param("startDate", "2026-04-01")
-                        .param("numberOfMonths", "0"))
+                        .param("numberOfMonths", "0")) // Constraint violation
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("numberOfMonths")));
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("numberOfMonths must be greater than or equal to 1"));
     }
 
     @Test
     void testInvalidDateParameterOnSummary() throws Exception {
         mockMvc.perform(get("/api/rewards/summary")
-                        .param("startDate", "2026-04-31")
+                        .param("startDate", "2026-04-31") // Invalid date
                         .param("numberOfMonths", "3"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
     void testInvalidNumberOfMonthsOnSummary() throws Exception {
         mockMvc.perform(get("/api/rewards/summary")
                         .param("startDate", "2026-04-01")
-                        .param("numberOfMonths", "abc"))
+                        .param("numberOfMonths", "abc")) // Type mismatch
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("numberOfMonths")));
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("numberOfMonths must be a valid value"));
     }
 
     @Test
@@ -197,7 +209,10 @@ public class RewardControllerTest {
         mockMvc.perform(get("/api/rewards/customers/1")
                         .param("startDate", "2026-07-01")
                         .param("endDate", "2026-07-31"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Customer not found with id: 1"));
     }
 
     @Test
