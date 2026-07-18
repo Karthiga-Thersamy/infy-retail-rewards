@@ -3,6 +3,7 @@ package com.retail.rewards.service;
 import com.retail.rewards.dto.RewardResponseDTO;
 import com.retail.rewards.dto.TransactionResponseDTO;
 import com.retail.rewards.dto.RewardSummaryResponseDTO;
+import com.retail.rewards.dto.CustomerRewardsSummaryDTO;
 import com.retail.rewards.entity.Customer;
 import com.retail.rewards.entity.Transaction;
 import com.retail.rewards.exception.CustomerNotFoundException;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -67,13 +69,22 @@ public class RewardServiceTest {
 
         RewardResponseDTO dto = rewardService.getRewards(customerId, start, end);
 
-        double expected = RewardsCalculator.calculatePoints(120.0) + RewardsCalculator.calculatePoints(75.0);
-        assertEquals(expected, dto.getRewardPoints(), 0.001);
+        assertNotNull(dto);
+        assertEquals(customerId, dto.getCustomerId());
+        assertEquals("Test User", dto.getCustomerName());
+
+        double expectedPointsT1 = RewardsCalculator.calculatePoints(120.0);
+        double expectedPointsT2 = RewardsCalculator.calculatePoints(75.0);
+        assertEquals(expectedPointsT1 + expectedPointsT2, dto.getRewardPoints(), 0.001);
 
         List<TransactionResponseDTO> txDtos = dto.getTransactions();
         assertEquals(2, txDtos.size());
-        assertEquals(RewardsCalculator.calculatePoints(120.0), txDtos.get(0).getRewardPoints(), 0.001);
-        assertEquals(RewardsCalculator.calculatePoints(75.0), txDtos.get(1).getRewardPoints(), 0.001);
+        
+        assertEquals(120.0, txDtos.get(0).getAmount());
+        assertEquals(expectedPointsT1, txDtos.get(0).getRewardPoints(), 0.001);
+
+        assertEquals(75.0, txDtos.get(1).getAmount());
+        assertEquals(expectedPointsT2, txDtos.get(1).getRewardPoints(), 0.001);
     }
 
     @Test
@@ -142,7 +153,27 @@ public class RewardServiceTest {
 
         RewardSummaryResponseDTO summary = rewardService.getRewardSummary(start, end);
 
-        assertEquals(2, summary.getCustomerList().size());
-        assertEquals(RewardsCalculator.calculatePoints(120.0) + RewardsCalculator.calculatePoints(200.0), summary.getTotalRewardPoints(), 0.001);
+        double points1 = RewardsCalculator.calculatePoints(120.0);
+        double points2 = RewardsCalculator.calculatePoints(200.0);
+
+        assertNotNull(summary);
+        assertEquals(points1 + points2, summary.getTotalRewardPoints(), 0.001);
+
+        List<CustomerRewardsSummaryDTO> customerList = summary.getCustomerList();
+        assertEquals(2, customerList.size());
+
+        CustomerRewardsSummaryDTO c1Summary = customerList.stream()
+                .filter(c -> c.getCustomerId().equals(1L))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Customer 1 mapping missing in summary output"));
+        assertEquals("User One", c1Summary.getCustomerName());
+        assertEquals(points1, c1Summary.getTotalRewardPoints(), 0.001);
+
+        CustomerRewardsSummaryDTO c2Summary = customerList.stream()
+                .filter(c -> c.getCustomerId().equals(2L))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Customer 2 mapping missing in summary output"));
+        assertEquals("User Two", c2Summary.getCustomerName());
+        assertEquals(points2, c2Summary.getTotalRewardPoints(), 0.001);
     }
 }

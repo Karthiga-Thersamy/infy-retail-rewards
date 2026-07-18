@@ -2,6 +2,7 @@ package com.retail.rewards.service;
 
 import com.retail.rewards.util.RewardsCalculator;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RewardsCalculatorTest {

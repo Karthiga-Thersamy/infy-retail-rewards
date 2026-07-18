@@ -11,7 +11,6 @@ import com.retail.rewards.exception.CustomerNotFoundException;
 import com.retail.rewards.repository.CustomerRepository;
 import com.retail.rewards.repository.TransactionRepository;
 import com.retail.rewards.util.RewardsCalculator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -29,12 +28,6 @@ public class RewardService {
     public RewardService(TransactionRepository transactionRepository, CustomerRepository customerRepository) {
         this.transactionRepository = transactionRepository;
         this.customerRepository = customerRepository;
-    }
-
-    public RewardResponseDTO getRewards(Long customerId, YearMonth month) {
-        LocalDate start = month.atDay(1);
-        LocalDate end = month.atEndOfMonth();
-        return getRewards(customerId, start, end);
     }
 
     public RewardResponseDTO getRewards(Long customerId, LocalDate start, LocalDate end) {
@@ -72,6 +65,7 @@ public class RewardService {
 
     public RewardSummaryResponseDTO getRewardSummary(LocalDate start, LocalDate end) {
         List<Transaction> transactions = transactionRepository.findAll();
+        
         Map<Long, List<Transaction>> transactionsByCustomer = transactions.stream()
                 .filter(t -> !t.getDate().isBefore(start) && !t.getDate().isAfter(end))
                 .collect(Collectors.groupingBy(Transaction::getCustomerId));
